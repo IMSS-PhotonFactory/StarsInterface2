@@ -23,14 +23,6 @@ namespace STARS
                 return (decimal)defaultTimeout / 1000;
             }
         }
-        public string keWords {
-            set {
-                KeyWord = value;
-            }
-            get {
-                return KeyWord;
-            }
-        }
         public bool IsConnected { set; get; } = false;
 
         //fields
@@ -220,12 +212,12 @@ namespace STARS
                     processedLevel = 0;
 
                     sock.Blocking = true;
-                    throw new StarsException("Receive error.: " + e.Message);
+                    throw new StarsException($"Receive error.: {e.Message}");
                 }
 
                 if (readCount < 1)
                 {
-                    throw new StarsException("Could not read.: " + readCount.ToString());
+                    throw new StarsException($"Could not read.: {readCount.ToString()}");
                 }
             }
             return rdMes;
@@ -234,7 +226,7 @@ namespace STARS
         private bool ProceessMessage(ref StarsMessage rdMess)
         {
             byte[] delimiter = { 0x3e, 0x20, 0x20, 0x0a };
-            rdMess.Clear();
+            //rdMess.Clear();
             byte nret;
             int lp;
             while (processedCount < readCount)
@@ -314,10 +306,10 @@ namespace STARS
 
     public class StarsMessage
     {
-        public string from { private set; get; }
-        public string to { private set; get; }
-        public string command { private set; get; }
-        public string parameters { private set; get; }
+        public string from { private set; get; } = "";
+        public string to { private set; get; } = "";
+        public string command { private set; get; } = "";
+        public string parameters { private set; get; } = "";
 
         //constructor
         public StarsMessage(string from, string to, string command, string parameters)
@@ -328,30 +320,18 @@ namespace STARS
             this.parameters = parameters;
         }
 
-        public StarsMessage()
-        {
-            this.Clear();
-        }
-
-        public void Clear()
-        {
-            this.from = "";
-            this.to = "";
-            this.command = "";
-            this.parameters = "";
-
-        }
+        public StarsMessage() : this("", "", "", "") { }
 
         /// <summary>Used to indicate the whole Stars Message.</summary>
         public string allMessage {
             get {
                 if (parameters.Length == 0)
                 {
-                    return from + ">" + to + " " + command;
+                    return $"{from}>{to} {command}";
                 }
                 else
                 {
-                    return from + ">" + to + " " + command + " " + parameters;
+                    return $"{from}>{to} {command} {parameters}";
                 }
             }
         }
@@ -365,7 +345,7 @@ namespace STARS
                 }
                 else
                 {
-                    return command + " " + parameters;
+                    return $"{command} {parameters}";
                 }
             }
         }
@@ -430,136 +410,18 @@ namespace STARS
 
     public class StarsCbArgs : EventArgs
     {
-        /// <summary>Used to indicate the 'fromnode', the element of Stars Message.</summary>
-        public string from;
-        /// <summary>Used to indicate the 'tonode', the element of Stars Message.</summary>
-        public string to;
-        /// <summary>Used to indicate the 'command', a part of 'Message' element of Stars Message.</summary>
-        public string command;
-        /// <summary>Used to indicate the 'parameters', a part of 'Message' element of Stars Message.</summary>
-        public string parameters;
+        public StarsMessage STARS;
 
-        /// <summary>Constructor for StarsCbArgs.</summary>
-        /// <remarks>Parameters for constructor are reflected to class fields and properties.</remarks>
-        /// <param name="from">Used to indicate the 'fromnode', the element of Stars Message.</param>
-        /// <param name="to">Used to indicate the 'tonode', the element of Stars Message.</param>
-        /// <param name="command">Used to indicate the 'command', a part of 'Message' element of Stars Message.</param>
-        /// <param name="parameters">Used to indicate the 'parameters', a part of 'Message' element of Stars Message.</param>
         public StarsCbArgs(string from, string to, string command, string parameters)
         {
-            this.from = from;
-            this.to = to;
-            this.command = command;
-            this.parameters = parameters;
+            STARS = new StarsMessage(from, to, command, parameters);
         }
 
-        /// <summary>Method for Clear.</summary>
-        /// <remarks>Clear class fields and properties of StarsMessage.</remarks>
-        public void Clear()
-        {
-            this.from = "";
-            this.to = "";
-            this.command = "";
-            this.parameters = "";
-
-        }
-
-        /// <summary>Used to indicate the whole Stars Message.</summary>
-        public string allMessage {
-            get {
-                if (parameters.Length == 0)
-                {
-                    return from + ">" + to + " " + command;
-                }
-                else
-                {
-                    return from + ">" + to + " " + command + " " + parameters;
-                }
-            }
-        }
-
-        /// <summary>Used to indicate the 'Message', the element of Stars Message.</summary>
-        public string Message {
-            get {
-                if (parameters.Length == 0)
-                {
-                    return command;
-                }
-                else
-                {
-                    return command + " " + parameters;
-                }
-            }
-        }
-
-        /// <summary>Returns strings array from parameters.</summary>
-        public string[] ParamStrArray(char spc)
-        {
-            return parameters.Split(spc);
-        }
-
-        public short[] ParamShortArray(char spc)
-        {
-            return StarsConvParams.ToShortArray(parameters, spc);
-        }
-
-        public ushort[] ParamUShortArray(char spc)
-        {
-            return StarsConvParams.ToUShortArray(parameters, spc);
-        }
-
-        public int[] ParamIntArray(char spc)
-        {
-            return StarsConvParams.ToIntArray(parameters, spc);
-        }
-
-        public uint[] ParamUIntArray(char spc)
-        {
-            return StarsConvParams.ToUIntArray(parameters, spc);
-        }
-
-        public long[] ParamLongArray(char spc)
-        {
-            return StarsConvParams.ToLongArray(parameters, spc);
-        }
-
-        public ulong[] ParamULongArray(char spc)
-        {
-            return StarsConvParams.ToULongArray(parameters, spc);
-        }
-
-        public float[] ParamFloatArray(char spc)
-        {
-            return StarsConvParams.ToFloatArray(parameters, spc);
-        }
-
-        public double[] ParamDoubleArray(char spc)
-        {
-            return StarsConvParams.ToDoubleArray(parameters, spc);
-        }
-
-        public decimal[] ParamDecimalArray(char spc)
-        {
-            return StarsConvParams.ToDecimalArray(parameters, spc);
-        }
-
-        public bool[] ParamBoolArray(char spc)
-        {
-            return StarsConvParams.ToBoolArray(parameters, spc);
-        }
     }
 
-    public class StarsException : System.ApplicationException
+    public class StarsException : ApplicationException
     {
-        /// <summary>
-        ///  Constructor for StarsException.
-        /// </summary>
-        /// <remarks>
-        /// Automatically called for Stars Exception.
-        /// </remarks>
-        /// <param name="message">Using inherited message.</param>
-        public StarsException(string message)
-            : base(message)
+        public StarsException(string message) : base(message)
         {
         }
     }
@@ -785,5 +647,4 @@ namespace STARS
 
     }
 
-    public delegate void StarsCbHandler(object obj, StarsCbArgs ev);
 }
