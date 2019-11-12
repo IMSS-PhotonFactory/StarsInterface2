@@ -31,16 +31,11 @@ namespace STARS
                 return KeyWord;
             }
         }
+        public bool IsConnected { set; get; } = false;
 
         //fields
         private int defaultTimeout = 30000;
         private Socket sock;
-        //public string nodeName;
-        //public string svrHost;
-        //public int svrPort;
-        //public string keyFile;
-        //public string keWords;
-
 
         //These variables are used for Read messages.
         private byte[] readBuffer;
@@ -77,6 +72,8 @@ namespace STARS
         //methods
         public void Connect(bool callbackmode = false)
         {
+            IsConnected = false;
+            
             //Read keyword
             List<string> keyword;
             try
@@ -116,7 +113,8 @@ namespace STARS
             {
                 CallbackOn();
             }
-            
+
+            IsConnected = true;
         }
 
         public bool CallbackOn()
@@ -270,22 +268,7 @@ namespace STARS
         }
 
         //Callback
-        private StarsCbHandler CbHandler;
         private StarsMessage cbMessage = new StarsMessage();
-
-        public void StartCbHandler(StarsCbHandler cb)
-        {
-            CbHandler = cb;
-            cbMessage = new StarsMessage();
-            try
-            {
-                sock.BeginReceive(readBuffer, 0, readBuffer.Length, SocketFlags.None, new AsyncCallback(ReceivedMessage), null);
-            }
-            catch
-            {
-                return;
-            }
-        }
 
         private void ReceivedMessage(IAsyncResult asyncResult)
         {
@@ -307,7 +290,6 @@ namespace STARS
 
             while (ProceessMessage(ref cbMessage))
             {
-                CbHandler?.Invoke(this, new StarsCbArgs(cbMessage.from, cbMessage.to, cbMessage.command, cbMessage.parameters));
                 OnDataReceived(new StarsCbArgs(cbMessage.from, cbMessage.to, cbMessage.command, cbMessage.parameters));
             }
             sock.BeginReceive(readBuffer, 0, readBuffer.Length, SocketFlags.None, new AsyncCallback(ReceivedMessage), null);
