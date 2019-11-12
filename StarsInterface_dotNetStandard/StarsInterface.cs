@@ -75,7 +75,7 @@ namespace STARS
         public StarsInterface(string nodeName, string svrHost) : this(nodeName, svrHost, nodeName + ".key", 6057) { }
 
         //methods
-        public void Connect()
+        public void Connect(bool callbackmode = false)
         {
             //Read keyword
             List<string> keyword;
@@ -112,7 +112,25 @@ namespace STARS
             }
 
             //set event
-            sock.BeginReceive(readBuffer, 0, readBuffer.Length, SocketFlags.None, new AsyncCallback(ReceivedMessage), null);
+            if(callbackmode)
+            {
+                CallbackOn();
+            }
+            
+        }
+
+        public bool CallbackOn()
+        {
+            try
+            {
+                sock.BeginReceive(readBuffer, 0, readBuffer.Length, SocketFlags.None, new AsyncCallback(ReceivedMessage), null);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         //Read keyword list from file.
@@ -228,10 +246,7 @@ namespace STARS
                 if (nret == 0x0d) { continue; }
                 if (nret == 0x0a)
                 {
-                    rdMess.from = Array2String(mesProcArray[0]);
-                    rdMess.to = Array2String(mesProcArray[1]);
-                    rdMess.command = Array2String(mesProcArray[2]);
-                    rdMess.parameters = Array2String(mesProcArray[3]);
+                    rdMess = new StarsMessage(Array2String(mesProcArray[0]), Array2String(mesProcArray[1]), Array2String(mesProcArray[2]), Array2String(mesProcArray[3]));
                     for (lp = 0; lp < 4; lp++) { mesProcArray[lp].Clear(); }
                     processedLevel = 0;
                     return true;
