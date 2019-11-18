@@ -50,11 +50,9 @@ namespace STARS
             readBuffer = new byte[1024];
             readCount = 0;
             processedCount = 0;
-            //readArray = new ArrayList();
             processedLevel = 0;
             mesProcArray = new ArrayList[4];
-            int lp;
-            for (lp = 0; lp <= 3; lp++) { mesProcArray[lp] = new ArrayList(); }
+            for ( int lp = 0; lp <= 3; lp++) { mesProcArray[lp] = new ArrayList(); }
         }
 
         public StarsInterface(string nodeName, string svrHost, string keyFile) : this(nodeName, svrHost, keyFile, 6057) { }
@@ -226,7 +224,6 @@ namespace STARS
         private bool ProceessMessage(ref StarsMessage rdMess)
         {
             byte[] delimiter = { 0x3e, 0x20, 0x20, 0x0a };
-            //rdMess.Clear();
             byte nret;
             int lp;
             while (processedCount < readCount)
@@ -406,6 +403,18 @@ namespace STARS
             return StarsConvParams.ToBoolArray(parameters, spc);
         }
 
+    }
+
+    public class StateObject
+    {
+        // Client socket.  
+        public Socket workSocket = null;
+        // Size of receive buffer.  
+        public const int BufferSize = 256;
+        // Receive buffer.  
+        public byte[] buffer = new byte[BufferSize];
+        // Received data string.  
+        public StringBuilder sb = new StringBuilder();
     }
 
     public class StarsCbArgs : EventArgs
