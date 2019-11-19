@@ -7,7 +7,7 @@ using System.Text;
 
 namespace STARS
 {
-    public class StarsInterface
+    public class StarsInterface : IDisposable
     {
         //properties
         public string NodeName { set; get; }
@@ -156,7 +156,10 @@ namespace STARS
 
         public void Disconnect()
         {
-            sock.Close();
+            if(sock != null)
+            {
+                sock.Disconnect(true);
+            }
         }
 
         //STARS Send
@@ -252,9 +255,9 @@ namespace STARS
 
                 client.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                //throw new StarsException($"Error at ReceiveCallback: {e.ToString()}"); ;
+                throw new StarsException($"Error at ReceiveCallback: {e.ToString()}"); ;
             }
         }
 
@@ -293,15 +296,15 @@ namespace STARS
             DataReceived?.Invoke(this, e);
         }
 
-        //This is Finalize
-        ~StarsInterface()
+        public void Dispose()
         {
-            if (sock != null)
-            {
-                Disconnect();
-            }
+            ((IDisposable)sock).Dispose();
         }
 
+        ~StarsInterface()
+        {
+            Dispose();
+        }
     }
 
     public class StarsMessage
