@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Net;
 using System.Net.Sockets;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -23,19 +23,11 @@ namespace STARS
                 return (decimal)defaultTimeout / 1000;
             }
         }
-        public bool IsConnected { set; get; } = false;
+        public bool IsConnected { private set; get; } = false;
 
         //fields
         private int defaultTimeout = 30000;
         private Socket sock;
-
-        //These variables are used for Read messages.
-        private byte[] readBuffer;
-        private int readCount;
-        private int processedCount;
-        //private ArrayList readArray;
-        private int processedLevel;  //shows progress of message processing (Processed.. 0=Nothing, 1=From, 2=To, 3=Command, 4=Parameter)
-        private ArrayList[] mesProcArray; //Buffer for message processing.
 
         //constructor
         public StarsInterface(string nodeName, string svrHost, string keyFile, int svrPort, decimal timeOut = 30.0m)
@@ -47,12 +39,6 @@ namespace STARS
             KeyWord = "";
             DefaultTimeout = timeOut;
             sock = null;
-            readBuffer = new byte[1024];
-            readCount = 0;
-            processedCount = 0;
-            processedLevel = 0;
-            mesProcArray = new ArrayList[4];
-            for ( int lp = 0; lp <= 3; lp++) { mesProcArray[lp] = new ArrayList(); }
         }
 
         public StarsInterface(string nodeName, string svrHost, string keyFile) : this(nodeName, svrHost, keyFile, 6057) { }
@@ -78,17 +64,32 @@ namespace STARS
             //Establish TCP/IP Socket
             try
             {
-                sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                sock.Connect(ServerHostname, ServerPort);
+                IPHostEntry ipHostInfo = Dns.GetHostEntry(ServerHostname);
+                IPAddress ipAddress = ipHostInfo.AddressList[0];
+                for (int i = 0; i < ipHostInfo.AddressList.Length; i++)
+                {
+                    if(ipHostInfo.AddressList[i].AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        ipAddress = ipHostInfo.AddressList[i];
+                        break;
+                    }
+                }
+                IPEndPoint remoteEP = new IPEndPoint(ipAddress, ServerPort);
+                sock = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                sock.Connect(remoteEP);
             }
             catch (Exception e)
             {
                 throw new StarsException("Could not establish TCP/IP connection.: " + e.Message);
             }
-            sock.Blocking = true;
 
             //Get random number.
-            var rNum = int.Parse(Receive().from);
+            var mes = Receive().from;
+            int rNum;
+            if(!int.TryParse(mes, out rNum))
+            {
+                throw new StarsException("Could not establish TCP/IP connection.: " + mes);
+            }
 
             //Get keyword and send to STARS server.
             tcpSendString($"{NodeName} {keyword[(rNum % keyword.Count)]}");
@@ -111,7 +112,10 @@ namespace STARS
         {
             try
             {
-                sock.BeginReceive(readBuffer, 0, readBuffer.Length, SocketFlags.None, new AsyncCallback(ReceivedMessage), null);
+                StateObject state = new StateObject();
+                state.workSocket = sock;
+
+                sock.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
             }
             catch (Exception)
             {
@@ -174,114 +178,115 @@ namespace STARS
         //Send strings TCP/IP socket.
         private void tcpSendString(string sndBuf)
         {
+            if (!IsConnected) { return; }
             sock.Send(Encoding.ASCII.GetBytes(sndBuf + "\n"));
         }
 
         //STARS Receive
-        public StarsMessage Receive(int timeout)
-        {
-            StarsMessage rdMes = ReceiveCommon(timeout);
-            return rdMes;
-        }
-
         public StarsMessage Receive()
         {
             return Receive(defaultTimeout);
         }
 
-        private StarsMessage ReceiveCommon(int timeout)
+        public StarsMessage Receive(int timeout)
         {
-            var rdMes = new StarsMessage();
+            bool isFinished = false;
 
-            while (!ProceessMessage(ref rdMes))
+            StateObject state = new StateObject();
+            sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout);
+
+            while (!isFinished)
             {
                 try
                 {
-                    sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout);
-                    readCount = sock.Receive(readBuffer, SocketFlags.None);
-                    processedCount = 0;
+                    int bytesRead = sock.Receive(state.buffer, SocketFlags.None);
+
+                    if (bytesRead > 0)
+                    {
+                        state.sb.Append(Encoding.Default.GetString(state.buffer, 0, bytesRead));
+
+                        if (state.sb.ToString().Contains("\n"))
+                        {
+                            isFinished = true;
+                        }
+                    }
+                    else
+                    {
+                        throw new StarsException($"Could not read.: {bytesRead.ToString()}");
+                    }
                 }
                 catch (Exception e)
                 {
-                    //Clear buffers with error.
-                    readCount = 0;
-                    processedCount = 0;
-                    for (int lp = 0; lp < 4; lp++) { mesProcArray[lp].Clear(); }
-                    processedLevel = 0;
-
-                    sock.Blocking = true;
-                    throw new StarsException($"Receive error.: {e.Message}");
-                }
-
-                if (readCount < 1)
-                {
-                    throw new StarsException($"Could not read.: {readCount.ToString()}");
+                    throw new StarsException($"Could not read.: {e.ToString()}");
                 }
             }
-            return rdMes;
-        }
 
-        private bool ProceessMessage(ref StarsMessage rdMess)
-        {
-            byte[] delimiter = { 0x3e, 0x20, 0x20, 0x0a };
-            byte nret;
-            int lp;
-            while (processedCount < readCount)
-            {
-                nret = readBuffer[processedCount];
-                processedCount++;
-                if (nret == 0x0d) { continue; }
-                if (nret == 0x0a)
-                {
-                    rdMess = new StarsMessage(Array2String(mesProcArray[0]), Array2String(mesProcArray[1]), Array2String(mesProcArray[2]), Array2String(mesProcArray[3]));
-                    for (lp = 0; lp < 4; lp++) { mesProcArray[lp].Clear(); }
-                    processedLevel = 0;
-                    return true;
-                }
-                if (nret == delimiter[processedLevel]) { processedLevel++; continue; }
-                mesProcArray[processedLevel].Add(nret);
-            }
-            processedCount = 0;
-            readCount = 0;
-            return false;
-        }
-
-        private string Array2String(ArrayList al)
-        {
-            byte[] bBuf = new byte[al.Count];
-            for (int i = 0; i < al.Count; i++)
-            {
-                bBuf[i] = (byte)al[i];
-            }
-            return Encoding.Default.GetString(bBuf, 0, al.Count);
+            var mes = state.sb.ToString().Substring(0, state.sb.ToString().IndexOf("\n") + 1).Replace("\r", string.Empty).Replace("\n", string.Empty);
+            return MessageConverter(mes);
         }
 
         //Callback
-        private StarsMessage cbMessage = new StarsMessage();
-
-        private void ReceivedMessage(IAsyncResult asyncResult)
+        private  void ReceiveCallback(IAsyncResult ar)
         {
             try
             {
-                readCount = sock.EndReceive(asyncResult);
+                StateObject state = (StateObject)ar.AsyncState;
+                Socket client = state.workSocket;
+
+                int bytesRead = client.EndReceive(ar);
+
+                if (bytesRead > 0)
+                {
+                    state.sb.Append(Encoding.Default.GetString(state.buffer, 0, bytesRead));
+
+                    if (state.sb.ToString().Contains("\n"))
+                    {
+                        var mes = state.sb.ToString().Substring(0, state.sb.ToString().IndexOf("\n") + 1).Replace("\r", string.Empty).Replace("\n", string.Empty);
+                        OnDataReceived(new StarsCbArgs(MessageConverter(mes)));
+
+                        state.sb.Remove(0, state.sb.ToString().IndexOf("\n") + 1);
+                    }
+                }
+                else
+                {
+                    return;
+                }
+
+                client.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
             }
-            catch
+            catch (Exception e)
             {
-                return;
+                throw new StarsException($"Error at ReceiveCallback: {e.ToString()}"); ;
+            }
+        }
+
+        private StarsMessage MessageConverter(string str)
+        {
+            if(str.IndexOf(">") < 0)
+            {
+                return new StarsMessage(str, "", "", "");
+            }
+            
+            var from = str.Substring(0, str.IndexOf(">")).TrimEnd();
+            str = str.Substring(str.IndexOf(">") + 1).TrimStart();
+
+            if (str.IndexOf(" ") < 0)
+            {
+                return new StarsMessage(from, str, "", "");
             }
 
-            if (readCount <= 0)
+            var to = str.Substring(0, str.IndexOf(" "));
+            str = str.Substring(str.IndexOf(" ") + 1).TrimStart();
+
+            if (str.IndexOf(" ") < 0)
             {
-                return;
+                return new StarsMessage(from, to, str, "");
             }
 
-            processedCount = 0;
+            var command = str.Substring(0, str.IndexOf(" "));
+            var parameters = str.Substring(str.IndexOf(" ") + 1).TrimStart();
 
-            while (ProceessMessage(ref cbMessage))
-            {
-                OnDataReceived(new StarsCbArgs(cbMessage.from, cbMessage.to, cbMessage.command, cbMessage.parameters));
-            }
-            sock.BeginReceive(readBuffer, 0, readBuffer.Length, SocketFlags.None, new AsyncCallback(ReceivedMessage), null);
+            return new StarsMessage(from, to, command, parameters);
         }
 
         public event EventHandler<StarsCbArgs> DataReceived;
@@ -405,15 +410,11 @@ namespace STARS
 
     }
 
-    public class StateObject
+    internal class StateObject
     {
-        // Client socket.  
         public Socket workSocket = null;
-        // Size of receive buffer.  
-        public const int BufferSize = 256;
-        // Receive buffer.  
+        public const int BufferSize = 1024;
         public byte[] buffer = new byte[BufferSize];
-        // Received data string.  
         public StringBuilder sb = new StringBuilder();
     }
 
@@ -426,6 +427,10 @@ namespace STARS
             STARS = new StarsMessage(from, to, command, parameters);
         }
 
+        public StarsCbArgs(StarsMessage starsmessage)
+        {
+            STARS = starsmessage;
+        }
     }
 
     public class StarsException : ApplicationException
