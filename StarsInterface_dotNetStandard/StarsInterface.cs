@@ -178,7 +178,6 @@ namespace STARS
         //Send strings TCP/IP socket.
         private void tcpSendString(string sndBuf)
         {
-            if (!IsConnected) { return; }
             sock.Send(Encoding.ASCII.GetBytes(sndBuf + "\n"));
         }
 
@@ -200,7 +199,6 @@ namespace STARS
                 try
                 {
                     int bytesRead = sock.Receive(state.buffer, SocketFlags.None);
-
                     if (bytesRead > 0)
                     {
                         state.sb.Append(Encoding.Default.GetString(state.buffer, 0, bytesRead));
@@ -254,9 +252,9 @@ namespace STARS
 
                 client.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                throw new StarsException($"Error at ReceiveCallback: {e.ToString()}"); ;
+                //throw new StarsException($"Error at ReceiveCallback: {e.ToString()}"); ;
             }
         }
 
