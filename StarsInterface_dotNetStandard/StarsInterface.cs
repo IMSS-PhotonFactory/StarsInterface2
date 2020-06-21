@@ -423,6 +423,30 @@ namespace STARS
     {
         public StarsMessage STARS;
 
+        public string from {
+            get {
+                return STARS.from;
+            }
+        }
+            
+        public string to {
+            get {
+                return STARS.to;
+            }
+        }
+
+        public string command {
+            get {
+                return STARS.command;
+            }
+        }
+
+        public string parameters {
+            get {
+                return STARS.parameters;
+            }
+        }
+
         public StarsCbArgs(string from, string to, string command, string parameters)
         {
             STARS = new StarsMessage(from, to, command, parameters);
