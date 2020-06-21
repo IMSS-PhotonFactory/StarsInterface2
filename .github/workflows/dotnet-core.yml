@@ -1,0 +1,38 @@
+name: .NET Core
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.101
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+
+  deploy:
+    needs: build
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: Pack
+        run: dotnet pack --configuration Release
+      - name: Push to NuGet
+        run: dotnet nuget push **/*.nupkg --api-key ${{ secrets.nuget_deploy }} --source https://api.nuget.org/v3/index.json --no-symbols true
+
+
