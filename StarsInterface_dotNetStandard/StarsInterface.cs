@@ -240,7 +240,7 @@ namespace STARS
                 {
                     state.sb.Append(Encoding.Default.GetString(state.buffer, 0, bytesRead));
 
-                    if (state.sb.ToString().Contains("\n"))
+                    while (state.sb.ToString().Contains("\n"))
                     {
                         var mes = state.sb.ToString().Substring(0, state.sb.ToString().IndexOf("\n") + 1).Replace("\r", string.Empty).Replace("\n", string.Empty);
                         OnDataReceived(new StarsCbArgs(MessageConverter(mes)));
@@ -414,7 +414,7 @@ namespace STARS
     internal class StateObject
     {
         public Socket workSocket = null;
-        public const int BufferSize = 1024;
+        public const int BufferSize = 8192;
         public byte[] buffer = new byte[BufferSize];
         public StringBuilder sb = new StringBuilder();
     }
