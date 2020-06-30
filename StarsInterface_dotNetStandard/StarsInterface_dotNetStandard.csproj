@@ -3,15 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>STARS</RootNamespace>
-    <Version>1.1.0</Version>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>StarsInterface</PackageId>
-    <Authors>Hiroaki NITANI</Authors>
-    <Company>IMSS-PF</Company>
-    <Copyright>Copyright 2020 IMSS-PF</Copyright>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/IMSS-PhotonFactory/StarsInterface2</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/IMSS-PhotonFactory/StarsInterface2/tree/master/StarsInterface_dotNetStandard</PackageProjectUrl>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
