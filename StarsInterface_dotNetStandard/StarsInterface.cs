@@ -28,6 +28,7 @@ namespace STARS
         //fields
         private int defaultTimeout = 30000;
         private Socket sock;
+        private bool disposedValue;
 
         //constructor
         public StarsInterface(string nodeName, string svrHost, string keyFile, int svrPort, decimal timeOut = 30.0m)
@@ -165,7 +166,7 @@ namespace STARS
         //STARS Send
         public void Send(string sndFrom, string sndTo, string sndCommand)
         {
-            tcpSendString($"{sndFrom} > {sndTo} {sndCommand}");
+            tcpSendString($"{sndFrom}>{sndTo} {sndCommand}");
         }
 
         public void Send(string sndTo, string sndCommand)
@@ -296,14 +297,34 @@ namespace STARS
             DataReceived?.Invoke(this, e);
         }
 
-        public void Dispose()
+        protected virtual void Dispose(bool disposing)
         {
-            ((IDisposable)sock).Dispose();
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: マネージド状態を破棄します (マネージド オブジェクト)
+                    sock.Dispose();
+                }
+
+                // TODO: アンマネージド リソース (アンマネージド オブジェクト) を解放し、ファイナライザーをオーバーライドします
+                // TODO: 大きなフィールドを null に設定します
+                disposedValue = true;
+            }
         }
 
-        ~StarsInterface()
+        // // TODO: 'Dispose(bool disposing)' にアンマネージド リソースを解放するコードが含まれる場合にのみ、ファイナライザーをオーバーライドします
+        // ~StarsInterface()
+        // {
+        //     // このコードを変更しないでください。クリーンアップ コードを 'Dispose(bool disposing)' メソッドに記述します
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
         {
-            Dispose();
+            // このコードを変更しないでください。クリーンアップ コードを 'Dispose(bool disposing)' メソッドに記述します
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 
