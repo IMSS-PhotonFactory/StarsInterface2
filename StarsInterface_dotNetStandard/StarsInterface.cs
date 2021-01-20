@@ -65,18 +65,9 @@ namespace STARS
             //Establish TCP/IP Socket
             try
             {
-                IPHostEntry ipHostInfo = Dns.GetHostEntry(ServerHostname);
-                IPAddress ipAddress = ipHostInfo.AddressList[0];
-                for (int i = 0; i < ipHostInfo.AddressList.Length; i++)
-                {
-                    if(ipHostInfo.AddressList[i].AddressFamily == AddressFamily.InterNetwork)
-                    {
-                        ipAddress = ipHostInfo.AddressList[i];
-                        break;
-                    }
-                }
-                IPEndPoint remoteEP = new IPEndPoint(ipAddress, ServerPort);
-                sock = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                IPAddress[] ipAddress = Dns.GetHostAddresses(ServerHostname);
+                var remoteEP = new IPEndPoint(ipAddress[0], ServerPort);
+                sock = new Socket(remoteEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 sock.Connect(remoteEP);
             }
             catch (Exception e)
@@ -324,7 +315,6 @@ namespace STARS
         public string command { private set; get; } = "";
         public string parameters { private set; get; } = "";
 
-        //constructor
         public StarsMessage(string from, string to, string command, string parameters)
         {
             this.from = from;
@@ -335,7 +325,6 @@ namespace STARS
 
         public StarsMessage() : this("", "", "", "") { }
 
-        /// <summary>Used to indicate the whole Stars Message.</summary>
         public string allMessage {
             get {
                 if (parameters.Length == 0)
@@ -349,7 +338,6 @@ namespace STARS
             }
         }
 
-        /// <summary>Used to indicate the 'Message', the element of Stars Message.</summary>
         public string Message {
             get {
                 if (parameters.Length == 0)
@@ -362,63 +350,6 @@ namespace STARS
                 }
             }
         }
-
-        /// <summary>Returns strings array from parameters.</summary>
-        public string[] ParamStrArray(char spc)
-        {
-            return parameters.Split(spc);
-        }
-
-        public short[] ParamShortArray(char spc)
-        {
-            return StarsConvParams.ToShortArray(parameters, spc);
-        }
-
-        public ushort[] ParamUShortArray(char spc)
-        {
-            return StarsConvParams.ToUShortArray(parameters, spc);
-        }
-
-        public int[] ParamIntArray(char spc)
-        {
-            return StarsConvParams.ToIntArray(parameters, spc);
-        }
-
-        public uint[] ParamUIntArray(char spc)
-        {
-            return StarsConvParams.ToUIntArray(parameters, spc);
-        }
-
-        public long[] ParamLongArray(char spc)
-        {
-            return StarsConvParams.ToLongArray(parameters, spc);
-        }
-
-        public ulong[] ParamULongArray(char spc)
-        {
-            return StarsConvParams.ToULongArray(parameters, spc);
-        }
-
-        public float[] ParamFloatArray(char spc)
-        {
-            return StarsConvParams.ToFloatArray(parameters, spc);
-        }
-
-        public double[] ParamDoubleArray(char spc)
-        {
-            return StarsConvParams.ToDoubleArray(parameters, spc);
-        }
-
-        public decimal[] ParamDecimalArray(char spc)
-        {
-            return StarsConvParams.ToDecimalArray(parameters, spc);
-        }
-
-        public bool[] ParamBoolArray(char spc)
-        {
-            return StarsConvParams.ToBoolArray(parameters, spc);
-        }
-
     }
 
     internal class StateObject
@@ -492,226 +423,4 @@ namespace STARS
         {
         }
     }
-
-    public static class StarsConvParams
-    {
-        //ToShort ==========================================
-        public static short[] ToShortArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            short[] vArray = new short[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    vArray[lp] = System.Convert.ToInt16(strArray[lp]);
-                }
-            }
-            catch
-            {
-                return new short[0];
-            }
-            return vArray;
-        }
-
-        //ToUShort ==========================================
-        public static ushort[] ToUShortArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            ushort[] vArray = new ushort[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    vArray[lp] = System.Convert.ToUInt16(strArray[lp]);
-                }
-            }
-            catch
-            {
-                return new ushort[0];
-            }
-            return vArray;
-        }
-
-        //ToInt ==========================================
-        public static int[] ToIntArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            int[] vArray = new int[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    vArray[lp] = System.Convert.ToInt32(strArray[lp]);
-                }
-            }
-            catch
-            {
-                return new int[0];
-            }
-            return vArray;
-        }
-
-        //ToUInt ==========================================
-        public static uint[] ToUIntArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            uint[] vArray = new uint[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    vArray[lp] = System.Convert.ToUInt32(strArray[lp]);
-                }
-            }
-            catch
-            {
-                return new uint[0];
-            }
-            return vArray;
-        }
-
-        //ToLong ==========================================
-        public static long[] ToLongArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            long[] vArray = new long[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    vArray[lp] = System.Convert.ToInt64(strArray[lp]);
-                }
-            }
-            catch
-            {
-                return new long[0];
-            }
-            return vArray;
-        }
-
-        //ToULong ==========================================
-        public static ulong[] ToULongArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            ulong[] vArray = new ulong[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    vArray[lp] = System.Convert.ToUInt64(strArray[lp]);
-                }
-            }
-            catch
-            {
-                return new ulong[0];
-            }
-            return vArray;
-        }
-
-        //ToFloat ==========================================
-        public static float[] ToFloatArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            float[] vArray = new float[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    vArray[lp] = System.Convert.ToSingle(strArray[lp]);
-                }
-            }
-            catch
-            {
-                return new float[0];
-            }
-            return vArray;
-        }
-
-        //ToDouble ==========================================
-        public static double[] ToDoubleArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            double[] vArray = new double[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    vArray[lp] = System.Convert.ToDouble(strArray[lp]);
-                }
-            }
-            catch
-            {
-                return new double[0];
-            }
-            return vArray;
-        }
-
-        //ToDecimal ==========================================
-        public static decimal[] ToDecimalArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            decimal[] vArray = new decimal[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    vArray[lp] = System.Convert.ToDecimal(strArray[lp]);
-                }
-            }
-            catch
-            {
-                return new decimal[0];
-            }
-            return vArray;
-        }
-
-        //ToBool ==========================================
-        public static bool[] ToBoolArray(string str, char sp)
-        {
-            string[] strArray = str.Split(sp);
-            int l = strArray.Length;
-            bool[] vArray = new bool[l];
-            int lp;
-            try
-            {
-                for (lp = 0; lp < l; lp++)
-                {
-                    if (System.Convert.ToInt32(strArray[lp]) == 0)
-                    {
-                        vArray[lp] = false;
-                    }
-                    else
-                    {
-                        vArray[lp] = true;
-                    }
-                }
-            }
-            catch
-            {
-                return new bool[0];
-            }
-            return vArray;
-        }
-
-    }
-
 }
