@@ -30,6 +30,8 @@ namespace STARS
         private Socket sock;
         private bool disposedValue;
 
+        private List<string> rcvbuf = new List<string>();
+
         //constructor
         public StarsInterface(string nodeName, string svrHost, string keyFile, int svrPort, decimal timeOut = 30.0m)
         {
@@ -184,38 +186,49 @@ namespace STARS
 
         public StarsMessage Receive(int timeout)
         {
-            bool isFinished = false;
-
-            StateObject state = new StateObject();
-            sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout);
-
-            while (!isFinished)
+            if(rcvbuf.Count == 0)
             {
-                try
-                {
-                    int bytesRead = sock.Receive(state.buffer, SocketFlags.None);
-                    if (bytesRead > 0)
-                    {
-                        state.sb.Append(Encoding.Default.GetString(state.buffer, 0, bytesRead));
+                bool isFinished = false;
 
-                        if (state.sb.ToString().Contains("\n"))
+                StateObject state = new StateObject();
+                sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, timeout);
+
+                while (!isFinished)
+                {
+                    try
+                    {
+                        int bytesRead = sock.Receive(state.buffer, SocketFlags.None);
+                        if (bytesRead > 0)
                         {
-                            isFinished = true;
+                            state.sb.Append(Encoding.Default.GetString(state.buffer, 0, bytesRead));
+
+                            if (state.sb.ToString().EndsWith("\n"))
+                            {
+                                isFinished = true;
+                            }
+                        }
+                        else
+                        {
+                            throw new StarsException($"Could not read.: {bytesRead}");
                         }
                     }
-                    else
+                    catch (Exception e)
                     {
-                        throw new StarsException($"Could not read.: {bytesRead.ToString()}");
+                        throw new StarsException($"Could not read.: {e}");
                     }
                 }
-                catch (Exception e)
+
+                while (state.sb.ToString().Contains("\n"))
                 {
-                    throw new StarsException($"Could not read.: {e.ToString()}");
+                    var mes = state.sb.ToString().Substring(0, state.sb.ToString().IndexOf("\n") + 1).Replace("\r", string.Empty).Replace("\n", string.Empty);
+                    rcvbuf.Add(mes);
+                    state.sb.Remove(0, state.sb.ToString().IndexOf("\n") + 1);
                 }
             }
 
-            var mes = state.sb.ToString().Substring(0, state.sb.ToString().IndexOf("\n") + 1).Replace("\r", string.Empty).Replace("\n", string.Empty);
-            return MessageConverter(mes);
+            var retmes = rcvbuf[0];
+            rcvbuf.RemoveAt(0);
+            return MessageConverter(retmes);
         }
 
         //Callback
