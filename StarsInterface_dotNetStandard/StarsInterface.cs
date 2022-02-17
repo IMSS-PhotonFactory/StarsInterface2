@@ -15,12 +15,12 @@ namespace STARS
         public int ServerPort { set; get; }
         public string KeyFile { set; get; }
         public string KeyWord { set; get; }
-        public decimal DefaultTimeout {
+        public int DefaultTimeout {
             set {
-                defaultTimeout = (int)(value * 1000);
+                defaultTimeout = value;
             }
             get {
-                return (decimal)defaultTimeout / 1000;
+                return defaultTimeout;
             }
         }
         public bool IsConnected { private set; get; } = false;
@@ -33,14 +33,14 @@ namespace STARS
         private List<string> rcvbuf = new List<string>();
 
         //constructor
-        public StarsInterface(string nodeName, string svrHost, string keyFile, int svrPort, decimal timeOut = 30.0m)
+        public StarsInterface(string nodeName, string svrHost, string keyFile, int svrPort, int timeOut = 30000)
         {
             NodeName = nodeName;
             ServerHostname = svrHost;
             ServerPort = svrPort;
             KeyFile = keyFile;
             KeyWord = "";
-            DefaultTimeout = timeOut;
+            defaultTimeout = timeOut;
             sock = null;
         }
 
