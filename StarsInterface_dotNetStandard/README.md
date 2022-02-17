@@ -21,12 +21,12 @@ StarsInterface.dllと互換性のある部分とない部分があります。
 - ```int ServerPort``` ポート名
 - ```string KeyFile``` キーファイルパス
 - ```string KeyWord``` キーワード（KeWordから名称変更）
-- ```decimal DefaultTimeout``` タイムアウト時間：秒（新規項目、デフォルト30秒）
+- ```decimal DefaultTimeout``` タイムアウト時間：ミリ秒（新規項目、デフォルト30秒）
 - ```bool IsConnected``` STARSサーバへの接続状態（新規項目、リードオンリー）
 
 ## StarsInterfaceのコンストラクタ（従来互換性あり）
 ```cs
-public StarsInterface(string nodeName, string svrHost, string keyFile, int svrPort, decimal timeOut = 30.0m)
+public StarsInterface(string nodeName, string svrHost, string keyFile, int svrPort, int timeOut = 30000)
 public StarsInterface(string nodeName, string svrHost, string keyFile)
 public StarsInterface(string nodeName, string svrHost)
 ```
@@ -48,4 +48,4 @@ KeyWord使用時はインスタンス生成後に設定
 （新規追加）以前のイベントシステムは廃止
 
 ---
-2019/11/19 Hiroaki NITANI
+2022/02/17 Hiroaki NITANI
