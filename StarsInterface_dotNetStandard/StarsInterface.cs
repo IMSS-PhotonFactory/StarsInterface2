@@ -153,6 +153,7 @@ namespace STARS
             if(sock != null)
             {
                 sock.Disconnect(true);
+                IsConnected = false;
             }
         }
 
